@@ -57,7 +57,7 @@ services:
         volumes:
             - "/var/run/docker.sock:/var/run/docker.sock:ro"
             - "./acme:/acme"
-            - "./logs:/logs"
+            - "{{ traefik_log_location }}:/logs"
             - "./traefik-config.toml:/traefik-config.toml:ro"
             - "./httpauth:/httpauth:ro"
         restart: always

@@ -1,10 +1,13 @@
 ---
-traefik_version: 2.9
-
 primary_user_home_dir: "/home/{{ primary_user }}"
+
+traefik_version: 2.9
+# traefik_log_location: "{{ primary_user_home_dir }}/services/traefik/logs"
+traefik_log_location: /var/log/traefik/
 
 subdomains_with_cloudflare_proxy:
     - t
     - whoami
+#
 # subdomains_without_cloudflare_proxy:
 #     -

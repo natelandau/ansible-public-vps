@@ -7,19 +7,19 @@
   loop:
       - jq
 
-- name: "create /home/{{ primary_user }}/{{ public_ip_tmp_dir }}"
+- name: "create {{ primary_user_home_dir }}/{{ public_ip_tmp_dir }}"
   become: true
   ansible.builtin.file:
-      path: "/home/{{ primary_user }}/{{ public_ip_tmp_dir }}"
+      path: "{{ primary_user_home_dir }}/{{ public_ip_tmp_dir }}"
       state: directory
       owner: "{{ primary_user }}"
       group: "{{ primary_user }}"
       mode: "0770"
 
-- name: "create /home/{{ primary_user }}/bin"
+- name: "create {{ primary_user_home_dir }}/bin"
   become: true
   ansible.builtin.file:
-      path: "/home/{{ primary_user }}/bin"
+      path: "{{ primary_user_home_dir }}/bin"
       state: directory
       owner: "{{ primary_user }}"
       group: "{{ primary_user }}"
@@ -29,7 +29,7 @@
   become: true
   ansible.builtin.template:
       src: cloudflare-ip-update.sh.j2
-      dest: "/home/{{ primary_user }}/bin/cloudflare-ip-update.sh"
+      dest: "{{ primary_user_home_dir }}/bin/cloudflare-ip-update.sh"
       owner: "{{ primary_user }}"
       group: "{{ primary_user }}"
       mode: "0770"
@@ -48,6 +48,6 @@
       name: "Update IP on Cloudflare"
       minute: "15"
       hour: "0"
-      job: "/home/{{ primary_user }}//bin/cloudflare-ip-update.sh"
+      job: "{{ primary_user_home_dir }}/bin/cloudflare-ip-update.sh"
       state: present
       user: "{{ primary_user }}"
