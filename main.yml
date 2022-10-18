@@ -7,9 +7,6 @@
       - vault.yml
 
   pre_tasks:
-      - name: "Populate runtime variables"
-        ansible.builtin.import_tasks: tasks/runtime-variables.yml
-        tags: ["always"]
       - name: Run sanity checks
         import_tasks: tasks/sanity.yml
         tags: ["always", "sanity"]
@@ -18,37 +15,9 @@
       - name: Update apt packages
         import_tasks: tasks/update.yml
         tags: ["update"]
-      - name: Configure Firewall
-        import_tasks: tasks/firewall.yml
-        tags: ["firewall"]
+      - name: Cloudflare IP Update
+        import_tasks: tasks/cloudflare-ip.yml
+        tags: ["cloudflare_ip"]
       - name: Install Traefik
         import_tasks: tasks/install-traefik.yml
         tags: ["traefik"]
-
-  # - name: Install Plausible
-  #   import_tasks: tasks/plausible.yml
-  #   tags: ["plausible"]
-  # - name: Update ufw firewall to allow Cloudflare reverse proxy IPs
-  #   import_tasks: tasks/firewall.yml
-  #   tags: ["firewall"]
-  # - name: Install and configure Longview
-  #   import_tasks: tasks/longview.yml
-  #   tags: ["longview"]
-  # - name: Install LAMP stack
-  #   import_tasks: tasks/lamp.yml
-  #   tags: ["lamp"]
-  # - name: Install Wordpress
-  #   import_tasks: tasks/wordpress.yml
-  #   tags: ["wordpress"]
-  # - name: Install fail2ban
-  #   import_tasks: tasks/wordpress.yml
-  #   tags: ["fail2ban"]
-  # - name: Install cloudflare IP update script
-  #   import_tasks: tasks/cloudflare_ip.yml
-  #   tags: ["ipupdate"]
-  # - name: Pull theme files
-  #   import_tasks: tasks/pull_theme.yml
-  #   tags: ["never", "pull-theme"]
-  # - name: Push theme files
-  #   import_tasks: tasks/push_theme.yml
-  #   tags: ["never", "push-theme"]

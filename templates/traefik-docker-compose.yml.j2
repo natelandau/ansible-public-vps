@@ -29,7 +29,7 @@ services:
             - "--entryPoints.web.http.redirections.entryPoint.to=websecure"
             - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
             - "--entryPoints.web.http.redirections.entrypoint.permanent=true"
-            - "--entrypoints.web.forwardedHeaders.trustedIPs=$CLOUDFLARE_IPS"
+            - "--entrypoints.web.forwardedHeaders.trustedIPs={{ cloudflare_ip4_ips }}"
 
             - "--providers.file.filename=/traefik-config.toml"
             - "--providers.file.watch=true"

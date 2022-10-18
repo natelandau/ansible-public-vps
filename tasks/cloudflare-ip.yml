@@ -1,0 +1,53 @@
+---
+- name: install jq
+  become: true
+  ansible.builtin.apt:
+      pkg: "{{ item }}"
+      state: present
+  loop:
+      - jq
+
+- name: "create /home/{{ primary_user }}/{{ public_ip_tmp_dir }}"
+  become: true
+  ansible.builtin.file:
+      path: "/home/{{ primary_user }}/{{ public_ip_tmp_dir }}"
+      state: directory
+      owner: "{{ primary_user }}"
+      group: "{{ primary_user }}"
+      mode: "0770"
+
+- name: "create /home/{{ primary_user }}/bin"
+  become: true
+  ansible.builtin.file:
+      path: "/home/{{ primary_user }}/bin"
+      state: directory
+      owner: "{{ primary_user }}"
+      group: "{{ primary_user }}"
+      mode: "0770"
+
+- name: copy shell script
+  become: true
+  ansible.builtin.template:
+      src: cloudflare-ip-update.sh.j2
+      dest: "/home/{{ primary_user }}/bin/cloudflare-ip-update.sh"
+      owner: "{{ primary_user }}"
+      group: "{{ primary_user }}"
+      mode: "0770"
+
+- name: run the script
+  become: true
+  ansible.builtin.command:
+      cmd: "{{ primary_user_home_dir }}/bin/cloudflare-ip-update.sh"
+  register: cloudflareIPUpdate
+  changed_when: false
+  failed_when: cloudflareIPUpdate.rc > 0
+
+- name: "add shell script to {{ primary_user }} cron"
+  become: true
+  ansible.builtin.cron:
+      name: "Update IP on Cloudflare"
+      minute: "15"
+      hour: "0"
+      job: "/home/{{ primary_user }}//bin/cloudflare-ip-update.sh"
+      state: present
+      user: "{{ primary_user }}"
