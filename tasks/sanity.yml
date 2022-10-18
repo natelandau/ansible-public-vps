@@ -1,0 +1,23 @@
+---
+- name: sanity - user mode
+  become: false
+  ansible.builtin.debug:
+      msg: "sanity check: user mode"
+
+- name: sanity - become mode
+  become: true
+  ansible.builtin.debug:
+      msg: "sanity check: become mode"
+
+- name: Ensure we can use Ansible
+  ansible.builtin.shell: "/usr/bin/echo test"
+  register: cmd_result
+  changed_when: false
+
+- ansible.builtin.assert:
+      that:
+          - "'not ready' not in cmd_result.stderr"
+          - "'test' in cmd_result.stdout"
+# - name: sanity - become mode
+#   ansible.builtin.debug:
+#       msg: "User Home Directory: {{ _HOME_DIR }}"
