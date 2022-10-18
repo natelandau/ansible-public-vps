@@ -1,0 +1,4 @@
+---
+traefik_version: 2.9
+
+primary_user_home_dir: "/home/{{ primary_user }}"

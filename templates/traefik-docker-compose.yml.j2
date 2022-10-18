@@ -1,0 +1,74 @@
+---
+version: "3.3"
+
+services:
+    traefik:
+        image: "traefik:v{{ traefik_version }}"
+        container_name: "traefik"
+        environment:
+            - "TZ=American/New_York"
+            - "CF_API_EMAIL={{ cf_api_email }}"
+            - "CF_DNS_API_TOKEN={{ cf_dns_api_token }}"
+        command:
+            - "--log.level=ERROR" # DEBUG, PANIC, FATAL, ERROR, WARN, and INFO.
+            - "--accesslog=true"
+            - "--log=true"
+            - "--log.filePath=/logs/traefik.log"
+            - "--accesslog.filepath=/logs/access.log"
+            - "--providers.docker=true"
+            - "--providers.docker.exposedbydefault=false"
+            - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+
+            - "--api=true"
+            - "--api.dashboard=true"
+
+            - "--entrypoints.websecure.address=:443"
+            - "--entrypoints.websecure.forwardedHeaders.trustedIPs={{ cloudflare_ip4_ips }}"
+
+            - "--entrypoints.web.address=:80"
+            - "--entryPoints.web.http.redirections.entryPoint.to=websecure"
+            - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
+            - "--entryPoints.web.http.redirections.entrypoint.permanent=true"
+            - "--entrypoints.web.forwardedHeaders.trustedIPs=$CLOUDFLARE_IPS"
+
+            - "--providers.file.filename=/traefik-config.toml"
+            - "--providers.file.watch=true"
+
+            - "--global.sendAnonymousUsage=false"
+            - "--global.checkNewVersion=false"
+
+            - "--certificatesresolvers.letsencrypt.acme.email={{ cf_api_email }}"
+            - "--certificatesresolvers.letsencrypt.acme.storage=/acme/acme.json"
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=10"
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.traefik.rule=Host(`t.{{ domain_name }}`)"
+            - "traefik.http.routers.traefik.entrypoints=web,websecure"
+            - "traefik.http.routers.traefik.service=api@internal"
+            - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+            - "traefik.http.routers.traefik.middlewares=redirectScheme@file, basicauth@file,compress@file,ipwhitelist@file"
+        ports:
+            - "80:80"
+            - "443:443"
+            - "8080:8080"
+        volumes:
+            - "/var/run/docker.sock:/var/run/docker.sock:ro"
+            - "./acme:/acme"
+            - "./logs:/logs"
+            - "./traefik-config.toml:/traefik-config.toml:ro"
+            - "./httpauth:/httpauth:ro"
+        restart: always
+
+    whoami:
+        image: "traefik/whoami"
+        container_name: "simple-service"
+        labels:
+            - "traefik.enable=true"
+            #- "traefik.http.routers.whoami.service=whoami"
+            - "traefik.http.routers.whoami.rule=Host(`whoami.{{ domain_name }}`)"
+            - "traefik.http.routers.whoami.entrypoints=web,websecure"
+            - "traefik.http.routers.whoami.tls.certresolver=letsencrypt"
+            - "traefik.http.routers.whoami.middlewares=redirectScheme@file, basicauth@file,compress@file,ipwhitelist@file"

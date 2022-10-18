@@ -1,0 +1,42 @@
+---
+- name: "Get Cloudflare IP4 IP Addresses"
+  delegate_to: localhost
+  ansible.builtin.shell:
+      cmd: |
+          set -o pipefail
+          wget -q https://www.cloudflare.com/ips-v4 -O - | tr '\n' ','
+      executable: /bin/bash
+  register: response
+  changed_when: false
+
+- name: set variable cloudflare_ip4_ips
+  ansible.builtin.set_fact:
+      cloudflare_ip4_ips: "{{ response.stdout }}"
+
+- name: "Ensure directory exists"
+  ansible.builtin.file:
+      path: "~/services/traefik/logs"
+      mode: 0755
+      owner: "{{ ansible_user_uid }}"
+      group: "{{ ansible_user_gid }}"
+      state: directory
+
+- name: "Template Traefik Docker Compose"
+  ansible.builtin.template:
+      src: "traefik-docker-compose.yml.j2"
+      dest: "~/services/traefik/traefik.yml"
+      mode: 0644
+
+- name: "Template Traefik Config File"
+  ansible.builtin.template:
+      src: "traefik-config.toml.j2"
+      dest: "~/services/traefik/traefik-config.toml"
+      mode: 0644
+
+- name: "Copy httpauth"
+  ansible.builtin.copy:
+      src: httpauth
+      dest: "~/services/traefik/httpauth"
+      owner: "{{ ansible_user_uid }}"
+      group: "{{ ansible_user_gid }}"
+      mode: "0644"

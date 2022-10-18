@@ -1,0 +1,14 @@
+[http]
+    [http.middlewares]
+        [http.middlewares.compress.compress]
+
+        [http.middlewares.redirectScheme.redirectScheme]
+            scheme = "https"
+            permanent = true
+
+        [http.middlewares.basicauth.basicauth]
+            usersfile = "/httpauth"
+            removeHeader = true
+
+        [http.middlewares.ipwhitelist.ipWhiteList]
+            sourceRange = [{{ cloudflare_ip4_ips | regex_replace(',', '", "') | regex_replace('^','"') | regex_replace('$','"') }}]
