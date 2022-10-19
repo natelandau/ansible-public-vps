@@ -8,6 +8,13 @@ traefik_log_location: /var/log/traefik/
 subdomains_with_cloudflare_proxy:
     - t
     - whoami
-#
+
 # subdomains_without_cloudflare_proxy:
 #     -
+
+crowdsec_collections:
+    - crowdsecurity/whitelist-good-actors
+    - crowdsecurity/traefik
+
+crowdsec_bouncers:
+    - crowdsec-firewall-bouncer-iptables

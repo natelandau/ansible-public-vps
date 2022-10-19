@@ -1,0 +1,34 @@
+type: email           # Don't change
+name: email_default   # Must match the registered plugin in the profile
+
+# One of "trace", "debug", "info", "warn", "error", "off"
+log_level: info
+group_wait: 30s
+group_threshold: 5
+timeout: 30s
+
+{% raw -%}
+format: |  # This template receives list of models.Alert objects
+  {{range . -}}
+    {{$alert := . -}}
+    {{range .Decisions -}}
+      <html><body><p><a href=https://www.whois.com/whois/{{.Value}}>{{.Value}}</a> will get <b>{{.Type}}</b> for next <b>{{.Duration}}</b> for triggering <b>{{.Scenario}}</b>. <a href=https://www.shodan.io/host/{{.Value}}>Shodan</a></p>
+    {{end -}}
+  {{end -}}
+{% endraw -%}
+
+smtp_host: {{ smtp_host }}
+smtp_username: {{ smtp_username }}
+smtp_password: {{ smtp_password }}
+smtp_port: {{ smtp_port }}
+auth_type: login
+sender_name: "CrowdSec"
+sender_email: crowdsec@{{ domain_name }}
+email_subject: "CrowdSec Notification"
+receiver_emails:
+  - {{ my_email_address }}
+
+# One of "ssltls", "none"
+encryption_type: ssltls
+
+---

@@ -1,0 +1,85 @@
+---
+- name: Install dependencies
+  become: true
+  ansible.builtin.apt:
+      pkg: "{{ item }}"
+      state: present
+  loop:
+      - apt-transport-https
+      - gnupg
+
+- name: Add an apt signing key
+  become: true
+  ansible.builtin.apt_key:
+      url: "https://packagecloud.io/crowdsec/crowdsec/gpgkey"
+
+- name: Add apt repo
+  become: true
+  ansible.builtin.apt_repository:
+      repo: "deb https://packagecloud.io/crowdsec/crowdsec/{{ ansible_distribution | lower }}/ {{ ansible_distribution_release | lower }} main"
+      update_cache: true
+
+- name: Install package
+  become: true
+  ansible.builtin.apt:
+      pkg: crowdsec
+      state: present
+  notify: restart_crowdsec
+
+- name: install bouncers
+  become: true
+  ansible.builtin.apt:
+      pkg: "{{ item }}"
+      state: present
+  loop: "{{ crowdsec_bouncers }}"
+  notify: restart_crowdsec
+
+- name: list installed collections
+  become: true
+  ansible.builtin.command:
+      cmd: cscli collections list
+  register: installed_collections
+  changed_when: false
+
+- name: "install collections"
+  become: true
+  ansible.builtin.command:
+      cmd: "cscli collections install {{ item }}"
+  notify: restart_crowdsec
+  when: item not in installed_collections.stdout
+  changed_when: item not in installed_collections.stdout
+  loop: "{{ crowdsec_collections }}"
+
+- name: Configure traefik collection
+  become: true
+  ansible.builtin.blockinfile:
+      path: /etc/crowdsec/acquis.yaml
+      state: present
+      block: |
+          # Configuration for traefik collection
+          # https://hub.crowdsec.net/author/crowdsecurity/collections/traefik
+          filenames:
+            - /var/log/traefik/*.log
+          labels:
+            type: traefik
+          ---
+  notify: restart_crowdsec
+  when: "'traefik' in installed_collections.stdout"
+
+- name: "Template Email Notification File"
+  become: true
+  ansible.builtin.template:
+      src: "crowdsec-email.yaml.j2"
+      dest: "/etc/crowdsec/notifications/email.yaml"
+      mode: 0644
+  notify: restart_crowdsec
+
+- name: "Enable email notifications"
+  become: true
+  ansible.builtin.blockinfile:
+      path: /etc/crowdsec/profiles.yaml
+      state: present
+      block: |
+          notifications:
+            - email_default
+  notify: restart_crowdsec

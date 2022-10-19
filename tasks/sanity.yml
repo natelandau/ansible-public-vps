@@ -18,6 +18,7 @@
       that:
           - "'not ready' not in cmd_result.stderr"
           - "'test' in cmd_result.stdout"
+  when: not ansible_check_mode
 # - name: sanity - become mode
 #   ansible.builtin.debug:
 #       msg: "User Home Directory: {{ _HOME_DIR }}"

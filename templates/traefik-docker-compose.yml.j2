@@ -20,7 +20,7 @@ services:
             - "--providers.docker.endpoint=unix:///var/run/docker.sock"
 
             - "--api=true"
-            - "--api.dashboard=true"
+            # - "--api.dashboard=true"
 
             - "--entrypoints.websecure.address=:443"
             - "--entrypoints.websecure.forwardedHeaders.trustedIPs={{ cloudflare_ip4_ips }}"
@@ -53,7 +53,7 @@ services:
         ports:
             - "80:80"
             - "443:443"
-            - "8080:8080"
+            #- "8080:8080"
         volumes:
             - "/var/run/docker.sock:/var/run/docker.sock:ro"
             - "./acme:/acme"

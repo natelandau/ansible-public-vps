@@ -9,3 +9,11 @@
   become: true
   ansible.builtin.apt:
       upgrade: safe
+
+- name: "Update crowdsec hub"
+  become: true
+  ansible.builtin.shell:
+      cmd: |
+          cscli hub update
+          cscli hub upgrade
+  changed_when: false

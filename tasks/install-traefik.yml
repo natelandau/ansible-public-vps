@@ -27,12 +27,14 @@
       src: "traefik-docker-compose.yml.j2"
       dest: "{{ primary_user_home_dir }}/services/traefik/traefik.yml"
       mode: 0644
+  notify: restart_traefik
 
 - name: "Template Traefik Config File"
   ansible.builtin.template:
       src: "traefik-config.toml.j2"
       dest: "{{ primary_user_home_dir }}/services/traefik/traefik-config.toml"
       mode: 0644
+  notify: restart_traefik
 
 - name: "Copy httpauth"
   ansible.builtin.copy:
@@ -41,6 +43,7 @@
       owner: "{{ ansible_user_uid }}"
       group: "{{ ansible_user_gid }}"
       mode: "0644"
+  notify: restart_traefik
 
 - name: "Install logrotation"
   become: true
@@ -50,24 +53,3 @@
       owner: "root"
       group: "root"
       mode: "0644"
-
-- name: "Is traefik running"
-  ansible.builtin.shell:
-      cmd: |
-          set -o pipefail
-          docker ps --format '{{ '{{' }}.Names{{ '}}' }}' | grep -w traefik
-      executable: /bin/bash
-  register: docker_running
-  ignore_errors: true
-  changed_when: false
-
-- name: "stop traefik"
-  ansible.builtin.command:
-      cmd: "docker compose -f {{ primary_user_home_dir }}/services/traefik/traefik.yml down"
-  when: docker_running.rc == 0
-  changed_when: false
-
-- name: "Start traefik"
-  ansible.builtin.command:
-      cmd: "docker compose -f {{ primary_user_home_dir }}/services/traefik/traefik.yml up -d"
-  changed_when: false

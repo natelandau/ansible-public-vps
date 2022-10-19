@@ -21,3 +21,9 @@
       - name: Install Traefik
         import_tasks: tasks/install-traefik.yml
         tags: ["traefik"]
+      - name: Install Crowdsec
+        import_tasks: tasks/install-crowdsec.yml
+        tags: ["crowdsec"]
+
+  handlers:
+      - ansible.builtin.import_tasks: handlers/main.yml
