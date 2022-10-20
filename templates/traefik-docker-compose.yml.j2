@@ -20,7 +20,8 @@ services:
             - "--providers.docker.endpoint=unix:///var/run/docker.sock"
 
             - "--api=true"
-            # - "--api.dashboard=true"
+            - "--api.dashboard=true"
+            - "--entrypoints.websecure.address=:9091"
 
             - "--entrypoints.websecure.address=:443"
             - "--entrypoints.websecure.forwardedHeaders.trustedIPs={{ cloudflare_ip4_ips }}"
@@ -53,7 +54,7 @@ services:
         ports:
             - "80:80"
             - "443:443"
-            #- "8080:8080"
+            - "9091:9091"
         volumes:
             - "/var/run/docker.sock:/var/run/docker.sock:ro"
             - "./acme:/acme"
@@ -61,13 +62,19 @@ services:
             - "./traefik-config.toml:/traefik-config.toml:ro"
             - "./httpauth:/httpauth:ro"
         restart: always
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.traefik.service=api@internal"
+            - "traefik.http.routers.traefik.rule=Host(`t.{{ domain_name }}`)"
+            - "traefik.http.routers.traefik.entrypoints=web,websecure"
+            - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+            - "traefik.http.routers.traefik.middlewares=redirectScheme@file, basicauth@file,compress@file,ipwhitelist@file"
 
     whoami:
         image: "traefik/whoami"
         container_name: "simple-service"
         labels:
             - "traefik.enable=true"
-            #- "traefik.http.routers.whoami.service=whoami"
             - "traefik.http.routers.whoami.rule=Host(`whoami.{{ domain_name }}`)"
             - "traefik.http.routers.whoami.entrypoints=web,websecure"
             - "traefik.http.routers.whoami.tls.certresolver=letsencrypt"

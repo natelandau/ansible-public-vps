@@ -8,6 +8,8 @@ traefik_log_location: /var/log/traefik/
 subdomains_with_cloudflare_proxy:
     - t
     - whoami
+    - stats
+    - test
 
 # subdomains_without_cloudflare_proxy:
 #     -

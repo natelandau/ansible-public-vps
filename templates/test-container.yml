@@ -1,0 +1,15 @@
+---
+version: "3.3"
+
+services:
+    test-container:
+        image: "containous/whoami:latest"
+        container_name: "test-container"
+        ports:
+            - 9001:80
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.test-container.rule=Host(`test.{{ domain_name }}`)"
+            - "traefik.http.routers.test-container.entrypoints=web,websecure"
+            - "traefik.http.routers.test-container.tls.certresolver=letsencrypt"
+            - "traefik.http.routers.test-container.middlewares=redirectScheme@file, basicauth@file,compress@file,ipwhitelist@file"

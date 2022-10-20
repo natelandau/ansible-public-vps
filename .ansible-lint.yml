@@ -24,6 +24,7 @@ skip_list:
     - unnamed-task
     - var-naming
     - name[casing]
+    - latest[git]
 
 warn_list:
     - experimental

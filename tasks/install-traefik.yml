@@ -36,6 +36,12 @@
       mode: 0644
   notify: restart_traefik
 
+- name: "Template Test-Container Config File"
+  ansible.builtin.template:
+      src: "test-container.yml"
+      dest: "{{ primary_user_home_dir }}/services/traefik/test-container.yml"
+      mode: 0644
+
 - name: "Copy httpauth"
   ansible.builtin.copy:
       src: httpauth
