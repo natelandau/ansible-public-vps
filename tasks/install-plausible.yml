@@ -1,0 +1,37 @@
+---
+- name: "Install/Update Plausible from Git"
+  ansible.builtin.git:
+      repo: "https://github.com/plausible/hosting"
+      dest: "{{ primary_user_home_dir }}/services/plausible"
+      force: true
+
+- name: "template out plausible config"
+  become: true
+  ansible.builtin.template:
+      src: plausible-conf.env.j2
+      dest: "{{ primary_user_home_dir }}/services/plausible/plausible-conf.env"
+      owner: "{{ primary_user }}"
+      group: "{{ primary_user }}"
+      mode: "0644"
+
+- name: "template out maxmind geoip config"
+  become: true
+  ansible.builtin.template:
+      src: geoip.conf.j2
+      dest: "{{ primary_user_home_dir }}/services/plausible/geoip/geoip.conf"
+      owner: "{{ primary_user }}"
+      group: "{{ primary_user }}"
+      mode: "0644"
+
+- name: "Add traefik labels to plausible"
+  ansible.builtin.blockinfile:
+      insertafter: "- plausible-conf.env"
+      path: "{{ primary_user_home_dir }}/services/plausible/docker-compose.yml"
+      state: present
+      block: |4
+              labels:
+                - "traefik.enable=true"
+                - "traefik.http.routers.stats.rule=Host(`stats.{{ domain_name }}`)"
+                - "traefik.http.routers.stats.entrypoints=web,websecure"
+                - "traefik.http.routers.stats.tls.certresolver=letsencrypt"
+                # - "traefik.http.routers.stats.middlewares=redirectScheme@file,compress@file,ipwhitelist@file"

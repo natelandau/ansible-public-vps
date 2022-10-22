@@ -27,3 +27,11 @@ ansible-playbook --ask-vault-pass main.yml
 # Or, if you have a password file
 ansible-playbook --vault-password-file [filename] main.yml
 ```
+
+# Troubleshooting
+
+### List all domains with certificates in Traefik Acme file
+
+```bash
+sudo cat ~/services/traefik/acme/acme.json | jq '.letsencrypt.Certificates | .[].domain.main'
+```

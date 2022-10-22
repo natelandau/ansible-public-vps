@@ -24,6 +24,9 @@
       - name: Install Crowdsec
         import_tasks: tasks/install-crowdsec.yml
         tags: ["crowdsec"]
+      - name: Install Plausible Analytics
+        import_tasks: tasks/install-plausible.yml
+        tags: ["plausible"]
 
   handlers:
       - ansible.builtin.import_tasks: handlers/main.yml

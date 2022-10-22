@@ -30,3 +30,27 @@
       cmd: "docker compose -f {{ primary_user_home_dir }}/services/traefik/traefik.yml up -d"
   changed_when: false
   listen: restart_traefik
+
+- name: "Is plausible running"
+  ansible.builtin.shell:
+      cmd: |
+          set -o pipefail
+          docker ps --format '{{ '{{' }}.Names{{ '}}' }}' | grep -w plausible
+      executable: /bin/bash
+  register: docker_running
+  ignore_errors: true
+  changed_when: false
+  listen: restart_plausible
+
+- name: "stop plausible"
+  ansible.builtin.command:
+      cmd: "docker compose -f {{ primary_user_home_dir }}/services/plausible/docker-compose.yml down"
+  when: docker_running.rc == 0
+  changed_when: false
+  listen: restart_plausible
+
+- name: "Start plausible"
+  ansible.builtin.command:
+      cmd: "docker compose -f {{ primary_user_home_dir }}/services/plausible/docker-compose.yml up -d"
+  changed_when: false
+  listen: restart_plausible
