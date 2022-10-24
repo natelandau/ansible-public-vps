@@ -28,6 +28,31 @@ ansible-playbook --ask-vault-pass main.yml
 ansible-playbook --vault-password-file [filename] main.yml
 ```
 
+# Configuring Services
+
+## Secrets Management
+
+All secrets used for containers are contained in variables with `docker.env.j2`. This file is owned by root.
+
+## Networking
+
+Traefik operates on a non-dafault network named `traefik_proxy`.
+
+Add new containers which will be accessible to Traefik with the following:
+
+```yaml
+services:
+    service:
+        networks:
+            - traefik_proxy
+        ...
+
+networks:
+    traefik_proxy:
+        name: traefik_proxy
+        external: true
+```
+
 # Troubleshooting
 
 ### List all domains with certificates in Traefik Acme file

@@ -1,15 +1,22 @@
 ---
 version: "3.3"
 
+networks:
+    traefik_proxy:
+        name: traefik_proxy
+        external: true
+
 services:
     test-container:
         image: "containous/whoami:latest"
-        container_name: "test-container"
+        container_name: "diagnostics"
         ports:
             - 9001:80
+        networks:
+            - traefik_proxy
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.test-container.rule=Host(`test.{{ domain_name }}`)"
             - "traefik.http.routers.test-container.entrypoints=web,websecure"
             - "traefik.http.routers.test-container.tls.certresolver=letsencrypt"
-            - "traefik.http.routers.test-container.middlewares=redirectScheme@file, basicauth@file,compress@file,ipwhitelist@file"
+            - "traefik.http.routers.test-container.middlewares=chain-basic-auth@file"

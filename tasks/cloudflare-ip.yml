@@ -7,47 +7,47 @@
   loop:
       - jq
 
-- name: "create {{ primary_user_home_dir }}/{{ public_ip_tmp_dir }}"
+- name: "create {{ ansible_user_dir }}/{{ public_ip_tmp_dir }}"
   become: true
   ansible.builtin.file:
-      path: "{{ primary_user_home_dir }}/{{ public_ip_tmp_dir }}"
+      path: "{{ ansible_user_dir }}/{{ public_ip_tmp_dir }}"
       state: directory
-      owner: "{{ primary_user }}"
-      group: "{{ primary_user }}"
+      owner: "{{ ansible_user_uid }}"
+      group: "{{ ansible_user_gid }}"
       mode: "0770"
 
-- name: "create {{ primary_user_home_dir }}/bin"
+- name: "create {{ ansible_user_dir }}/bin"
   become: true
   ansible.builtin.file:
-      path: "{{ primary_user_home_dir }}/bin"
+      path: "{{ ansible_user_dir }}/bin"
       state: directory
-      owner: "{{ primary_user }}"
-      group: "{{ primary_user }}"
+      owner: "{{ ansible_user_uid }}"
+      group: "{{ ansible_user_gid }}"
       mode: "0770"
 
 - name: copy shell script
   become: true
   ansible.builtin.template:
       src: cloudflare-ip-update.sh.j2
-      dest: "{{ primary_user_home_dir }}/bin/cloudflare-ip-update.sh"
-      owner: "{{ primary_user }}"
-      group: "{{ primary_user }}"
+      dest: "{{ ansible_user_dir }}/bin/cloudflare-ip-update.sh"
+      owner: "{{ ansible_user_uid }}"
+      group: "{{ ansible_user_gid }}"
       mode: "0770"
 
 - name: run the script
   become: true
   ansible.builtin.command:
-      cmd: "{{ primary_user_home_dir }}/bin/cloudflare-ip-update.sh"
+      cmd: "{{ ansible_user_dir }}/bin/cloudflare-ip-update.sh"
   register: cloudflareIPUpdate
   changed_when: false
   failed_when: cloudflareIPUpdate.rc > 0
 
-- name: "add shell script to {{ primary_user }} cron"
+- name: "add shell script to {{ ansible_user_id }} cron"
   become: true
   ansible.builtin.cron:
       name: "Update IP on Cloudflare"
       minute: "15"
       hour: "0"
-      job: "{{ primary_user_home_dir }}/bin/cloudflare-ip-update.sh"
+      job: "{{ ansible_user_dir }}/bin/cloudflare-ip-update.sh"
       state: present
-      user: "{{ primary_user }}"
+      user: "{{ ansible_user_id }}"

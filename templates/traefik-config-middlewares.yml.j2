@@ -1,0 +1,77 @@
+---
+http:
+    middlewares:
+        mw-basic-auth:
+            basicauth:
+                removeHeader: true
+                usersfile: "/.httpauth.txt"
+
+        mw-compress:
+            compress: {}
+
+        mw-rate-limit:
+            rateLimit:
+                average: 100
+                burst: 50
+
+        mw-redirect-scheme:
+            redirectScheme:
+                scheme: https
+                permanent: true
+
+        mw-secure-headers:
+            headers:
+                accessControlAllowMethods:
+                    - GET
+                    - OPTIONS
+                    - PUT
+                accessControlMaxAge: 100
+                hostsProxyHeaders:
+                    - "X-Forwarded-Host"
+                stsSeconds: 63072000
+                stsIncludeSubdomains: true
+                stsPreload: true
+                forceSTSHeader: true
+                contentTypeNosniff: true
+                browserXssFilter: true
+                # sslForceHost: true # add sslHost to all of the services
+                # sslHost: "{{ domain_name }}"
+                referrerPolicy: "same-origin"
+                permissionsPolicy: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), vr=()"
+                customResponseHeaders:
+                    X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex,"
+                    server: ""
+
+        mw-buffering:
+            buffering:
+                maxResponseBodyBytes: 2000000
+                maxRequestBodyBytes: 10485760
+                memRequestBodyBytes: 2097152
+                memResponseBodyBytes: 2097152
+                retryExpression: "IsNetworkError() && Attempts() <= 2"
+
+        mw-ip-white-list:
+            ipWhiteList:
+                sourceRange:
+                    - "127.0.0.1/32"
+                    - "192.168.90.0/24"
+                    - "{{ cloudflare_ip4_ips | regex_replace(',', '"\n                    - "') }}"
+
+        chain-no-auth:
+            chain:
+                middlewares:
+                    - mw-ip-white-list
+                    - mw-rate-limit
+                    - mw-redirect-scheme
+                    # - mw-secure-headers
+                    - mw-compress
+
+        chain-basic-auth:
+            chain:
+                middlewares:
+                    - mw-ip-white-list
+                    - mw-rate-limit
+                    - mw-redirect-scheme
+                    #- mw-secure-headers
+                    - mw-basic-auth
+                    - mw-compress

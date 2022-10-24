@@ -8,6 +8,7 @@
   listen: restart_crowdsec
 
 - name: "Is traefik running"
+  become: true
   ansible.builtin.shell:
       cmd: |
           set -o pipefail
@@ -19,19 +20,22 @@
   listen: restart_traefik
 
 - name: "stop traefik"
+  become: true
   ansible.builtin.command:
-      cmd: "docker compose -f {{ primary_user_home_dir }}/services/traefik/traefik.yml down"
+      cmd: "docker compose -f {{ docker_dir }}/traefik.yml down"
   when: docker_running.rc == 0
   changed_when: false
   listen: restart_traefik
 
 - name: "Start traefik"
+  become: true
   ansible.builtin.command:
-      cmd: "docker compose -f {{ primary_user_home_dir }}/services/traefik/traefik.yml up -d"
+      cmd: "docker compose -f {{ docker_dir }}/traefik.yml up -d"
   changed_when: false
   listen: restart_traefik
 
 - name: "Is plausible running"
+  become: true
   ansible.builtin.shell:
       cmd: |
           set -o pipefail
@@ -43,14 +47,16 @@
   listen: restart_plausible
 
 - name: "stop plausible"
+  become: true
   ansible.builtin.command:
-      cmd: "docker compose -f {{ primary_user_home_dir }}/services/plausible/docker-compose.yml down"
+      cmd: "docker compose -f {{ docker_dir }}/plausible/docker-compose.yml down"
   when: docker_running.rc == 0
   changed_when: false
   listen: restart_plausible
 
 - name: "Start plausible"
+  become: true
   ansible.builtin.command:
-      cmd: "docker compose -f {{ primary_user_home_dir }}/services/plausible/docker-compose.yml up -d"
+      cmd: "docker compose -f {{ docker_dir }}/plausible/docker-compose.yml up -d"
   changed_when: false
   listen: restart_plausible

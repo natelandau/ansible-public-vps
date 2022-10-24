@@ -22,3 +22,7 @@
 # - name: sanity - become mode
 #   ansible.builtin.debug:
 #       msg: "User Home Directory: {{ _HOME_DIR }}"
+
+# - name: Print all available facts
+#   ansible.builtin.debug:
+#       var: ansible_facts

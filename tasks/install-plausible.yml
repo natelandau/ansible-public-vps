@@ -1,37 +1,107 @@
 ---
+- name: "Set initial fact"
+  ansible.builtin.set_fact:
+      need_repo_pull: false
+
+- name: "Does repository exist"
+  ansible.builtin.stat:
+      path: "{{ docker_dir }}/plausible/.git"
+  register: plausibe_exists
+
+- name: "Is plausible behind origin"
+  ansible.builtin.shell:
+      chdir: "{{ docker_dir }}/plausible"
+      cmd: git remote update && git status -uno | grep behind
+  register: plausibe_behind
+  changed_when: false
+  failed_when: false
+  when: plausibe_exists.stat.exists
+
 - name: "Install/Update Plausible from Git"
   ansible.builtin.git:
       repo: "https://github.com/plausible/hosting"
-      dest: "{{ primary_user_home_dir }}/services/plausible"
+      dest: "{{ docker_dir }}/plausible"
       force: true
+  when: not plausibe_exists.stat.exists or plausibe_behind.rc == 0
 
 - name: "template out plausible config"
   become: true
   ansible.builtin.template:
       src: plausible-conf.env.j2
-      dest: "{{ primary_user_home_dir }}/services/plausible/plausible-conf.env"
-      owner: "{{ primary_user }}"
-      group: "{{ primary_user }}"
-      mode: "0644"
+      dest: "{{ docker_dir }}/plausible/plausible-conf.env"
+      owner: root
+      group: root
+      mode: "0600"
 
 - name: "template out maxmind geoip config"
   become: true
   ansible.builtin.template:
       src: geoip.conf.j2
-      dest: "{{ primary_user_home_dir }}/services/plausible/geoip/geoip.conf"
-      owner: "{{ primary_user }}"
-      group: "{{ primary_user }}"
+      dest: "{{ docker_dir }}/plausible/geoip/geoip.conf"
+      owner: "{{ ansible_user_uid }}"
+      group: "{{ ansible_user_gid }}"
       mode: "0644"
+  notify: restart_plausible
 
-- name: "Add traefik labels to plausible"
+- name: "Configure plausible service"
   ansible.builtin.blockinfile:
       insertafter: "- plausible-conf.env"
-      path: "{{ primary_user_home_dir }}/services/plausible/docker-compose.yml"
+      path: "{{ docker_dir }}/plausible/docker-compose.yml"
       state: present
+      marker: "# {mark} plausible block"
       block: |4
               labels:
                 - "traefik.enable=true"
                 - "traefik.http.routers.stats.rule=Host(`stats.{{ domain_name }}`)"
                 - "traefik.http.routers.stats.entrypoints=web,websecure"
                 - "traefik.http.routers.stats.tls.certresolver=letsencrypt"
-                # - "traefik.http.routers.stats.middlewares=redirectScheme@file,compress@file,ipwhitelist@file"
+                # - "traefik.http.routers.whoami.middlewares=chain-basic-auth@file"
+              networks:
+                - traefik_proxy
+  notify: restart_plausible
+
+- name: "Configure mail service"
+  ansible.builtin.blockinfile:
+      insertafter: "mail:"
+      path: "{{ docker_dir }}/plausible/docker-compose.yml"
+      state: present
+      marker: "# {mark} mail block"
+      block: |4
+              networks:
+                - traefik_proxy
+  notify: restart_plausible
+
+- name: "Configure plausible_db service"
+  ansible.builtin.blockinfile:
+      insertafter: "plausible_db:"
+      path: "{{ docker_dir }}/plausible/docker-compose.yml"
+      state: present
+      marker: "# {mark} plausible_db block"
+      block: |4
+              networks:
+                - traefik_proxy
+  notify: restart_plausible
+
+- name: "Configure plausible_events_db service"
+  ansible.builtin.blockinfile:
+      insertafter: "plausible_events_db:"
+      path: "{{ docker_dir }}/plausible/docker-compose.yml"
+      state: present
+      marker: "# {mark} plausible_events_db block"
+      block: |4
+              networks:
+                - traefik_proxy
+  notify: restart_plausible
+
+- name: "Add proxy network"
+  ansible.builtin.blockinfile:
+      insertbefore: "volumes:"
+      path: "{{ docker_dir }}/plausible/docker-compose.yml"
+      state: present
+      marker: "# {mark} networks block"
+      block: |
+          networks:
+            traefik_proxy:
+              name: traefik_proxy
+              external: true
+  notify: restart_plausible

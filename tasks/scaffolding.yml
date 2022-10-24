@@ -1,0 +1,9 @@
+---
+- name: "Template .env file"
+  become: true
+  ansible.builtin.template:
+      src: "docker.env.j2"
+      dest: "{{ docker_dir }}/.env"
+      mode: 0600
+      owner: root
+      group: root

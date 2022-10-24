@@ -8,12 +8,13 @@
       executable: /bin/bash
   register: response
   changed_when: false
+  check_mode: false
 
 - name: set variable cloudflare_ip4_ips
   ansible.builtin.set_fact:
       cloudflare_ip4_ips: "{{ response.stdout }}"
 
-- name: "Ensure directory exists"
+- name: "Ensure {{ traefik_log_location }} exists"
   become: true
   ansible.builtin.file:
       path: "{{ traefik_log_location }}"
@@ -22,30 +23,36 @@
       group: root
       state: directory
 
+- name: "Ensure {{ docker_dir }}/traefik/rules exists"
+  ansible.builtin.file:
+      path: "{{ docker_dir }}/traefik/rules"
+      mode: 0755
+      state: directory
+
 - name: "Template Traefik Docker Compose"
   ansible.builtin.template:
       src: "traefik-docker-compose.yml.j2"
-      dest: "{{ primary_user_home_dir }}/services/traefik/traefik.yml"
+      dest: "{{ docker_dir }}/traefik.yml"
       mode: 0644
   notify: restart_traefik
 
 - name: "Template Traefik Config File"
   ansible.builtin.template:
-      src: "traefik-config.toml.j2"
-      dest: "{{ primary_user_home_dir }}/services/traefik/traefik-config.toml"
+      src: "traefik-config-middlewares.yml.j2"
+      dest: "{{ docker_dir }}/traefik/rules/middlewares.yml"
       mode: 0644
   notify: restart_traefik
 
-- name: "Template Test-Container Config File"
+- name: "Template diagnostics compose file"
   ansible.builtin.template:
-      src: "test-container.yml"
-      dest: "{{ primary_user_home_dir }}/services/traefik/test-container.yml"
+      src: "diagnostics-container.yml"
+      dest: "{{ docker_dir }}/diagnostics.yml"
       mode: 0644
 
 - name: "Copy httpauth"
   ansible.builtin.copy:
-      src: httpauth
-      dest: "{{ primary_user_home_dir }}/services/traefik/httpauth"
+      src: httpauth.txt
+      dest: "{{ docker_dir }}/traefik/.httpauth.txt"
       owner: "{{ ansible_user_uid }}"
       group: "{{ ansible_user_gid }}"
       mode: "0644"

@@ -10,8 +10,14 @@
       - name: Run sanity checks
         import_tasks: tasks/sanity.yml
         tags: ["always", "sanity"]
+      - name: Run scaffolding
+        import_tasks: tasks/scaffolding.yml
+        tags: ["always", "scaffolding"]
 
   tasks:
+      - name: Configure Docker
+        import_tasks: tasks/docker.yml
+        tags: ["docker"]
       - name: Update apt packages
         import_tasks: tasks/update.yml
         tags: ["update"]
