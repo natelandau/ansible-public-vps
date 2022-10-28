@@ -1,0 +1,76 @@
+## The theme to display: light, dark, grey, auto.
+---
+theme: auto
+default_2fa_method: totp
+authentication_backend:
+    password_reset:
+        disable: true
+    file:
+        path: /config/users.yml
+        password:
+            algorithm: argon2id
+            iterations: 1
+            salt_length: 16
+            parallelism: 8
+            memory: 64
+totp:
+    issuer: authelia.com
+access_control:
+    default_policy: deny
+    networks:
+        - name: docker
+          networks:
+              - "192.168.90.0/24"
+        - name: cloudflare
+          networks:
+              - "{{ cloudflare_ip4_ips | regex_replace(',', '"\n              - "') }}"
+    rules:
+        # Rules applied to everyone
+        - domain: "*.{{ domain_name }}"
+          policy: two_factor
+
+regulation:
+    max_retries: 5
+    find_time: 10m
+    ban_time: 15m
+
+password_policy:
+    standard:
+        enabled: false
+        min_length: 8
+        max_length: 0
+        require_uppercase: false
+        require_lowercase: false
+        require_number: false
+        require_special: false
+    zxcvbn:
+        enabled: true
+        min_score: 3
+session:
+    name: external_authelia_session
+    same_site: lax
+    expiration: 1h
+    inactivity: 15m
+    remember_me_duration:  1w
+storage:
+    local:
+        path: /config/db.sqlite3
+notifier:
+    smtp:
+        subject: "[Authelia] {title}"
+        sender: "Authelia <noreply@{{ domain_name }}>"
+log:
+    level: info
+    format: text
+    file_path: "/logs/%d.authelia.log"
+    keep_stdout: true
+server:
+    host: 0.0.0.0
+    port: 9091
+    path: ""
+ntp:
+    address: "time.cloudflare.com:123"
+    version: 3
+    max_desync: 3s
+    disable_startup_check: false
+    disable_failure: true

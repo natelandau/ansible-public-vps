@@ -7,7 +7,7 @@
       enabled: true
   listen: restart_crowdsec
 
-- name: "Is traefik running"
+- name: "Is reverse proxy running running"
   become: true
   ansible.builtin.shell:
       cmd: |
@@ -17,22 +17,23 @@
   register: docker_running
   ignore_errors: true
   changed_when: false
-  listen: restart_traefik
+  listen: restart_proxy
 
-- name: "stop traefik"
+- name: "stop reverse proxy"
   become: true
   ansible.builtin.command:
-      cmd: "docker compose -f {{ docker_dir }}/traefik.yml down"
+      cmd: "docker compose -f {{ docker_dir }}/reverse_proxy.yml down"
   when: docker_running.rc == 0
   changed_when: false
-  listen: restart_traefik
+  listen: restart_proxy
+  ignore_errors: true
 
-- name: "Start traefik"
+- name: "Start reverse proxy"
   become: true
   ansible.builtin.command:
-      cmd: "docker compose -f {{ docker_dir }}/traefik.yml up -d"
+      cmd: "docker compose -f {{ docker_dir }}/reverse_proxy.yml up -d"
   changed_when: false
-  listen: restart_traefik
+  listen: restart_proxy
 
 - name: "Is plausible running"
   become: true
@@ -53,6 +54,7 @@
   when: docker_running.rc == 0
   changed_when: false
   listen: restart_plausible
+  ignore_errors: true
 
 - name: "Start plausible"
   become: true

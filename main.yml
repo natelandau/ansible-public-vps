@@ -25,8 +25,8 @@
         import_tasks: tasks/cloudflare-ip.yml
         tags: ["cloudflare_ip"]
       - name: Install Traefik
-        import_tasks: tasks/install-traefik.yml
-        tags: ["traefik"]
+        import_tasks: tasks/install-reverse-proxy.yml
+        tags: ["proxy"]
       - name: Install Crowdsec
         import_tasks: tasks/install-crowdsec.yml
         tags: ["crowdsec"]

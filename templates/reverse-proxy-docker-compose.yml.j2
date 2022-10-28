@@ -24,42 +24,31 @@ services:
             - "--accesslog=true"
             - "--api.dashboard=true"
             - "--api=true"
-
-            - "--entrypoints.websecure.address=:9091"
+            #- "--entrypoints.dashboard.address=:9000"
             - "--entrypoints.websecure.address=:443"
             - "--entrypoints.websecure.forwardedHeaders.trustedIPs={{ cloudflare_ip4_ips }}"
-
             - "--entrypoints.web.address=:80"
             - "--entrypoints.web.forwardedHeaders.trustedIPs={{ cloudflare_ip4_ips }}"
             - "--entryPoints.web.http.redirections.entrypoint.permanent=true"
             - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
             - "--entryPoints.web.http.redirections.entryPoint.to=websecure"
-
             - "--global.sendAnonymousUsage=false"
             - "--global.checkNewVersion=false"
-
             - "--log.filePath=/logs/traefik.log"
             - "--log.level=WARN" # DEBUG, PANIC, FATAL, ERROR, WARN, and INFO.
             - "--log=true"
-
             - "--providers.docker.endpoint=unix:///var/run/docker.sock"
             - "--providers.docker.exposedbydefault=false"
             - "--providers.docker=true"
             - "--providers.file.directory=/rules"
             - "--providers.file.watch=true"
-
+            - "--providers.docker.network=traefik_proxy"
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=10"
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
             - "--certificatesresolvers.letsencrypt.acme.email=${CF_API_EMAIL}"
             - "--certificatesresolvers.letsencrypt.acme.storage=/acme/acme.json"
-        labels:
-            - "traefik.enable=true"
-            - "traefik.http.routers.traefik.rule=Host(`t.{{ domain_name }}`)"
-            - "traefik.http.routers.traefik.entrypoints=web,websecure"
-            - "traefik.http.routers.traefik.service=api@internal"
-            - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
         networks:
             traefik_proxy:
                 ipv4_address: 192.168.90.3
@@ -72,28 +61,25 @@ services:
               published: 443
               protocol: tcp
               mode: host
-            - target: 9091
-              published: 9091
-              protocol: tcp
-              mode: host
         volumes:
             - "/var/run/docker.sock:/var/run/docker.sock:ro"
             - "{{ docker_dir }}/traefik/acme:/acme"
             - "{{ traefik_log_location }}:/logs"
             - "{{ docker_dir }}/traefik/.httpauth.txt:/.httpauth.txt:ro"
             - "{{ docker_dir }}/traefik/rules:/rules"
-        restart: always
+        restart: unless-stopped
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.traefik.service=api@internal"
             - "traefik.http.routers.traefik.rule=Host(`t.{{ domain_name }}`)"
-            - "traefik.http.routers.traefik.entrypoints=web,websecure"
             - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
-            - "traefik.http.routers.traefik.middlewares=chain-basic-auth@file"
+            - "traefik.http.routers.traefik.entrypoints=web,websecure"
+            - "traefik.http.routers.traefik.middlewares=chain-authelia@file"
 
     whoami:
         image: "traefik/whoami"
         container_name: "whoami"
+        restart: unless-stopped
         networks:
             - traefik_proxy
         labels:
@@ -101,4 +87,39 @@ services:
             - "traefik.http.routers.whoami.rule=Host(`whoami.{{ domain_name }}`)"
             - "traefik.http.routers.whoami.entrypoints=web,websecure"
             - "traefik.http.routers.whoami.tls.certresolver=letsencrypt"
-            - "traefik.http.routers.whoami.middlewares=chain-basic-auth@file"
+            - "traefik.http.routers.whoami.middlewares=chain-authelia@file"
+
+    authelia:
+        restart: unless-stopped
+        container_name: "authelia"
+        image: "authelia/authelia:{{ authelia_version }}"
+        env_file: .env
+        environment:
+            - "AUTHELIA_DEFAULT_REDIRECTION_URL=https://auth.${DOMAIN_NAME:?err}"
+            - "AUTHELIA_SESSION_DOMAIN=${DOMAIN_NAME:?err}"
+            - "AUTHELIA_NOTIFIER_SMTP_HOST=${SMTP_HOST:?err}"
+            - "AUTHELIA_NOTIFIER_SMTP_PORT=${SMTP_PORT:?err}"
+            - "AUTHELIA_NOTIFIER_SMTP_USERNAME=${SMTP_USERNAME:?err}"
+            - "AUTHELIA_NOTIFIER_SMTP_STARTUP_CHECK_ADDRESS=${MY_EMAIL_ADDRESS:?err}"
+
+            - "AUTHELIA_JWT_SECRET_FILE=/secrets/AUTHELIA_JWT_SECRET"
+            - "AUTHELIA_SESSION_SECRET_FILE=/secrets/AUTHELIA_SESSION_SECRET"
+            - "AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE=/secrets/SMTP_PASSWORD"
+            - "AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE=/secrets/AUTHELIA_SQLITE_ENCRYPTION_KEY"
+        command:
+            - "authelia"
+            - "--config=/config/config.yml"
+        expose:
+            - 9091
+        volumes:
+            - "{{ docker_dir }}/authelia:/config"
+            - "{{ secrets_dir }}:/secrets"
+            - "{{ authelia_log_location }}:/logs"
+        networks:
+            traefik_proxy:
+                ipv4_address: 192.168.90.4
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.authelia.rule=Host(`auth.{{ domain_name }}`)"
+            - "traefik.http.routers.authelia.entrypoints=web,websecure"
+            - "traefik.http.routers.authelia.tls.certresolver=letsencrypt"

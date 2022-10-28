@@ -1,0 +1,14 @@
+---
+###############################################################
+#                         Users Database                      #
+###############################################################
+
+# This file can be used if you do not have an LDAP set up.
+users:
+    natelandau:
+        displayname: "natelandau"
+        password: "$argon2id$v=19$m=65536,t=3,p=4$6mpOnZfPbv1sbf7NinijjQ$NJxz5c/VI6kfXSHdNltBNznQYdNqv2jgnNCtxJ9bzz0"
+        email: authelia@natenate.org
+        groups:
+            - admins
+            - dev

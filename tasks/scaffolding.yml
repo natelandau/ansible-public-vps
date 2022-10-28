@@ -7,3 +7,12 @@
       mode: 0600
       owner: root
       group: root
+
+- name: "Ensure {{ secrets_dir }}secrets exists"
+  become: true
+  ansible.builtin.file:
+      path: "{{ secrets_dir }}"
+      mode: 0600
+      owner: root
+      group: root
+      state: directory

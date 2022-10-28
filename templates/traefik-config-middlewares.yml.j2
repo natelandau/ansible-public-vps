@@ -57,6 +57,16 @@ http:
                     - "192.168.90.0/24"
                     - "{{ cloudflare_ip4_ips | regex_replace(',', '"\n                    - "') }}"
 
+        mw-authelia:
+            forwardAuth:
+                address: "http://authelia:9091/api/verify?rd=https%3A%2F%2Fauth.{{ domain_name }}%2F"
+                trustForwardHeader: true
+                authResponseHeaders:
+                    - "Remote-User"
+                    - "Remote-Groups"
+                    - "Remote-Email"
+                    - "Remote-Name"
+
         chain-no-auth:
             chain:
                 middlewares:
@@ -74,4 +84,14 @@ http:
                     - mw-redirect-scheme
                     #- mw-secure-headers
                     - mw-basic-auth
+                    - mw-compress
+
+        chain-authelia:
+            chain:
+                middlewares:
+                    - mw-ip-white-list
+                    - mw-rate-limit
+                    - mw-redirect-scheme
+                    #- mw-secure-headers
+                    - mw-authelia
                     - mw-compress

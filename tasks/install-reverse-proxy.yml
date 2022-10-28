@@ -1,0 +1,80 @@
+---
+- name: "Get Cloudflare IP4 IP Addresses"
+  delegate_to: localhost
+  ansible.builtin.shell:
+      cmd: |
+          set -o pipefail
+          wget -q https://www.cloudflare.com/ips-v4 -O - | tr '\n' ','
+      executable: /bin/bash
+  register: response
+  changed_when: false
+  check_mode: false
+
+- name: set variable cloudflare_ip4_ips
+  ansible.builtin.set_fact:
+      cloudflare_ip4_ips: "{{ response.stdout }}"
+
+- name: "Ensure log locations exists"
+  become: true
+  ansible.builtin.file:
+      path: "{{ item }}"
+      mode: 0755
+      owner: root
+      group: root
+      state: directory
+  loop:
+      - "{{ traefik_log_location }}"
+      - "{{ authelia_log_location }}"
+
+- name: "Ensure service directories exists"
+
+  ansible.builtin.file:
+      path: "{{ item }}"
+      mode: 0755
+      state: directory
+  with_items:
+      - "{{ docker_dir }}/traefik/rules"
+      - "{{ docker_dir }}/authelia"
+
+- name: "Copy templates to server"
+  become: true
+  ansible.builtin.template:
+      src: "{{ item.src }}"
+      dest: "{{ docker_dir }}/{{ item.dest }}"
+      owner: "root"
+      group: "root"
+      mode: 0600
+  notify: restart_proxy
+  with_items:
+      - { src: "reverse-proxy-docker-compose.yml.j2", dest: "reverse_proxy.yml" }
+      - { src: "traefik-config-middlewares.yml.j2", dest: "traefik/rules/middlewares.yml" }
+      - { src: "../files/httpauth.txt", dest: "traefik/.httpauth.txt" }
+      - { src: "authelia-users.yml.j2", dest: "authelia/users.yml" }
+      - { src: "authelia-config.yml.j2", dest: "authelia/config.yml" }
+
+- name: "Install logrotation"
+  become: true
+  ansible.builtin.template:
+      src: "traefik.logrotate.j2"
+      dest: "/etc/logrotate.d/traefik"
+      owner: "root"
+      group: "root"
+      mode: "0644"
+
+- name: "Write Secrets"
+  become: true
+  ansible.builtin.copy:
+      dest: "{{ secrets_dir }}/{{ item.dest }}"
+      content: "{{ item.content }}"
+      mode: 0600
+      owner: root
+      group: root
+  with_items:
+      - dest: "AUTHELIA_JWT_SECRET"
+        content: "{{ authelia_jwt_secret }}"
+      - dest: AUTHELIA_SESSION_SECRET
+        content: "{{ authelia_session_secret }}"
+      - dest: AUTHELIA_SQLITE_ENCRYPTION_KEY
+        content: "{{ authelia_sqlite_encryption_key }}"
+      - dest: SMTP_PASSWORD
+        content: "{{ smtp_password }}"

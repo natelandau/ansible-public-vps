@@ -1,15 +1,20 @@
 ---
 docker_dir: "{{ ansible_user_dir }}/services"
-
-traefik_version: 2.9
-traefik_log_location: /var/log/traefik/
+secrets_dir: "{{ docker_dir }}/secrets"
 timezone: "America/New_York"
 
+authelia_version: 4.37.0
+authelia_log_location: /var/log/authelia
+
+traefik_version: 2.9
+traefik_log_location: /var/log/traefik
+
 subdomains_with_cloudflare_proxy:
-    - t
-    - whoami
+    - auth
     - stats
+    - t
     - test
+    - whoami
 
 # subdomains_without_cloudflare_proxy:
 #     -
