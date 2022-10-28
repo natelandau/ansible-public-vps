@@ -25,10 +25,14 @@ access_control:
           networks:
               - "{{ cloudflare_ip4_ips | regex_replace(',', '"\n              - "') }}"
     rules:
+        - domain: 'stats.{{ domain_name }}'
+          resources:
+            - '^/js/.*\.js$'
+            - '^/api([/?].*)?$'
+          policy: bypass
         # Rules applied to everyone
         - domain: "*.{{ domain_name }}"
           policy: two_factor
-
 regulation:
     max_retries: 5
     find_time: 10m

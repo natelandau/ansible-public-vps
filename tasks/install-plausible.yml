@@ -55,7 +55,7 @@
                 - "traefik.http.routers.stats.rule=Host(`stats.{{ domain_name }}`)"
                 - "traefik.http.routers.stats.entrypoints=web,websecure"
                 - "traefik.http.routers.stats.tls.certresolver=letsencrypt"
-                # - "traefik.http.routers.whoami.middlewares=chain-basic-auth@file"
+                - "traefik.http.routers.stats.middlewares=chain-authelia@file"
               networks:
                 - traefik_proxy
   notify: restart_plausible
