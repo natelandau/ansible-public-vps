@@ -29,6 +29,8 @@ access_control:
           resources:
             - '^/js/.*\.js$'
             - '^/api([/?].*)?$'
+            - '^/auth/google/callback.*$'
+            - '^/\w+\.com/.*$'
           policy: bypass
         # Rules applied to everyone
         - domain: "*.{{ domain_name }}"
