@@ -9,13 +9,6 @@ authelia_log_location: /var/log/authelia
 traefik_version: 2.9
 traefik_log_location: /var/log/traefik
 
-subdomains_with_cloudflare_proxy:
-    - auth
-    - stats
-    - t
-    - test
-    - whoami
-
 # subdomains_without_cloudflare_proxy:
 #     -
 
