@@ -15,6 +15,8 @@ traefik_log_location: /var/log/traefik
 crowdsec_collections:
     - crowdsecurity/whitelist-good-actors
     - crowdsecurity/traefik
+    - LePresidente/authelia
 
 crowdsec_bouncers:
     - crowdsec-firewall-bouncer-iptables
+    - crowdsec-cloudflare-bouncer

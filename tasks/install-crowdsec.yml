@@ -34,6 +34,13 @@
   loop: "{{ crowdsec_bouncers }}"
   notify: restart_crowdsec
 
+- name: list installed bouncers
+  become: true
+  ansible.builtin.command:
+      cmd: cscli bouncers list
+  register: installed_bouncers
+  changed_when: false
+
 - name: list installed collections
   become: true
   ansible.builtin.command:
@@ -55,6 +62,7 @@
   ansible.builtin.blockinfile:
       path: /etc/crowdsec/acquis.yaml
       state: present
+      marker: "# {mark} traefik block"
       block: |
           # Configuration for traefik collection
           # https://hub.crowdsec.net/author/crowdsecurity/collections/traefik
@@ -65,6 +73,50 @@
           ---
   notify: restart_crowdsec
   when: "'traefik' in installed_collections.stdout"
+
+- name: Configure authelia collection
+  become: true
+  ansible.builtin.blockinfile:
+      path: /etc/crowdsec/acquis.yaml
+      state: present
+      marker: "# {mark} authelia block"
+      block: |
+          # https://hub.crowdsec.net/author/LePresidente/collections/authelia
+          filenames:
+            - /var/log/authelia/*.log
+          labels:
+            type: authelia
+          ---
+  notify: restart_crowdsec
+  when: "'authelia' in installed_collections.stdout"
+
+- name: "Configure Cloudflare bouncer"
+  when: "'crowdsec-cloudflare-bouncer' in installed_bouncers.stdout or 'crowdsec-cloudflare-bouncer' in crowdsec_bouncers"
+  block:
+      - name: "Clean existing cloudflare bouncer components"
+        become: true
+        ansible.builtin.command:
+            cmd: "sudo crowdsec-cloudflare-bouncer -d"
+        ignore_errors: true
+        changed_when: false
+
+      - name: "Configure cloudflare bouncer"
+        become: true
+        ansible.builtin.command:
+            cmd: "crowdsec-cloudflare-bouncer -g {{ crowdsec_cloudflare_bouncer_token }} -o /etc/crowdsec/bouncers/crowdsec-cloudflare-bouncer.yaml"
+        changed_when: false
+
+      - name: "Set up IP lists and firewall rules at cloudflare"
+        become: true
+        ansible.builtin.command:
+            cmd: "sudo crowdsec-cloudflare-bouncer -s"
+        changed_when: false
+
+      - name: "Start Cloudflare Bouncer"
+        become: true
+        ansible.builtin.systemd:
+            state: restarted
+            name: crowdsec-cloudflare-bouncer
 
 - name: "Template Email Notification File"
   become: true
@@ -83,3 +135,12 @@
           notifications:
             - email_default
   notify: restart_crowdsec
+
+- name: "Add crowdsec update to cron"
+  become: true
+  ansible.builtin.cron:
+      name: "Update crowdsec"
+      job: cscli hub update && cscli hub upgrade
+      minute: "15"
+      hour: "0"
+      state: present
