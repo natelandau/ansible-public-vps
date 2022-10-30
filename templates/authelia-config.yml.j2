@@ -27,10 +27,11 @@ access_control:
     rules:
         - domain: 'stats.{{ domain_name }}'
           resources:
-            - '^/js/.*\.js$'
+            - '^/js/.*\.js(\?.*)?$'
             - '^/api([/?].*)?$'
             - '^/auth/google/callback.*$'
-            - '^/\w+\.com/.*$'
+            - '^/natelandau\.com.*$'
+            - '^/(share|favicon|images)/.*$'
           policy: bypass
         # Rules applied to everyone
         - domain: "*.{{ domain_name }}"
