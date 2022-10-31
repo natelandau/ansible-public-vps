@@ -57,6 +57,13 @@
   changed_when: item not in installed_collections.stdout
   loop: "{{ crowdsec_collections }}"
 
+- name: list installed collections
+  become: true
+  ansible.builtin.command:
+      cmd: cscli collections list
+  register: installed_collections
+  changed_when: false
+
 - name: Configure traefik collection
   become: true
   ansible.builtin.blockinfile:
@@ -89,6 +96,22 @@
           ---
   notify: restart_crowdsec
   when: "'authelia' in installed_collections.stdout"
+
+- name: Configure nginx collection
+  become: true
+  ansible.builtin.blockinfile:
+      path: /etc/crowdsec/acquis.yaml
+      state: present
+      marker: "# {mark} nginx block"
+      block: |
+          # https://hub.crowdsec.net/author/crowdsecurity/collections/nginx
+          filenames:
+            - /var/log/nginx/*.log
+          labels:
+            type: nginx
+          ---
+  notify: restart_crowdsec
+  when: "'nginx' in installed_collections.stdout"
 
 - name: "Configure Cloudflare bouncer"
   when: "'crowdsec-cloudflare-bouncer' in installed_bouncers.stdout or 'crowdsec-cloudflare-bouncer' in crowdsec_bouncers"

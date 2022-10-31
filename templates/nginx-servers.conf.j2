@@ -1,0 +1,101 @@
+## Version 2022/10/04 - Changelog: https://github.com/linuxserver/docker-baseimage-alpine-nginx/commits/master/root/defaults/nginx/site-confs/default.conf.sample - NATE
+
+{# server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    listen 443 ssl http2 default_server;
+    listen [::]:443 ssl http2 default_server;
+
+    server_name _;
+
+    set $root /app/www/public;
+    if (!-d /app/www/public) {
+        set $root /config/www;
+    }
+    root $root;
+    index index.html index.htm index.php;
+
+    location / {
+        # enable for basic auth
+        #auth_basic "Restricted";
+        #auth_basic_user_file /config/nginx/.htpasswd;
+
+        try_files $uri $uri/ /index.html /index.php$is_args$args =404;
+    }
+
+    location ~ ^(.+\.php)(.*)$ {
+        fastcgi_split_path_info ^(.+\.php)(.*)$;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        include /etc/nginx/fastcgi_params;
+    }
+
+    # deny access to .htaccess/.htpasswd files
+    location ~ /\.ht {
+        deny all;
+    }
+} #}
+
+server {
+    listen 80;
+    listen [::]:80;
+
+    # Server specific
+    server_name staging.natenate.org;
+    root /config/www/staging;
+    access_log  /var/log/nginx/staging-access.log;
+
+    # Shared configs
+    error_page 403 404 /404.html;
+    client_max_body_size 0;
+    #add_header Content-Encoding gzip;
+
+    if ($new_uri != "") {
+        rewrite ^(.*)$ $new_uri permanent;
+    }
+
+    index index.html;
+
+    location / {
+        if ( $request_uri ~ "/index.html" ) {
+            rewrite ^(|/(.*))/index\.html$ /$2 permanent;
+        }
+    }
+
+    location ~ /\.git(ignore)?|redirects\.map {
+        deny all;
+    }
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+
+    # Server specific
+    server_name production.natenate.org;
+    root /config/www/production;
+    access_log  /var/log/nginx/production-access.log;
+
+    # Shared configs
+    error_page 403 404 /404.html;
+    client_max_body_size 0;
+    #add_header Content-Encoding gzip;
+
+    if ($new_uri != "") {
+        rewrite ^(.*)$ $new_uri permanent;
+    }
+
+    index index.html;
+
+    location / {
+        if ( $request_uri ~ "/index.html" ) {
+            rewrite ^(|/(.*))/index\.html$ /$2 permanent;
+        }
+    }
+
+    location ~ /\.git(ignore)?|redirects\.map {
+        deny all;
+    }
+
+}

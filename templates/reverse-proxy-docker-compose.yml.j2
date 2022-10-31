@@ -63,10 +63,10 @@ services:
               mode: host
         volumes:
             - "/var/run/docker.sock:/var/run/docker.sock:ro"
-            - "{{ docker_dir }}/traefik/acme:/acme"
+            - "{{ docker_dir }}/proxy/traefik/acme:/acme"
             - "{{ traefik_log_location }}:/logs"
-            - "{{ docker_dir }}/traefik/.httpauth.txt:/.httpauth.txt:ro"
-            - "{{ docker_dir }}/traefik/rules:/rules"
+            - "{{ docker_dir }}/proxy/traefik/.httpauth.txt:/.httpauth.txt:ro"
+            - "{{ docker_dir }}/proxy/traefik/rules:/rules"
         restart: unless-stopped
         labels:
             - "traefik.enable=true"
@@ -82,6 +82,9 @@ services:
         restart: unless-stopped
         networks:
             - traefik_proxy
+        depends_on:
+            - traefik
+            - authelia
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.whoami.rule=Host(`whoami.{{ domain_name }}`)"
@@ -94,6 +97,8 @@ services:
         container_name: "authelia"
         image: "authelia/authelia:{{ authelia_version }}"
         env_file: .env
+        depends_on:
+            - traefik
         environment:
             - "AUTHELIA_DEFAULT_REDIRECTION_URL=https://auth.${DOMAIN_NAME:?err}"
             - "AUTHELIA_SESSION_DOMAIN=${DOMAIN_NAME:?err}"
@@ -112,8 +117,8 @@ services:
         expose:
             - 9091
         volumes:
-            - "{{ docker_dir }}/authelia:/config"
-            - "{{ secrets_dir }}:/secrets"
+            - "{{ docker_dir }}/proxy/authelia:/config"
+            - "{{ docker_dir }}/proxy/secrets:/secrets"
             - "{{ authelia_log_location }}:/logs"
         networks:
             traefik_proxy:

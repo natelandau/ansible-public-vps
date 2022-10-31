@@ -1,10 +1,11 @@
 {{ traefik_log_location }}/* {
-weekly
+daily
 rotate 5
 size 5M
 missingok
 notifempty
+compress
 postrotate
-docker kill --signal="USR1" traefik
+    docker kill --signal="USR1" traefik
 endscript
 }

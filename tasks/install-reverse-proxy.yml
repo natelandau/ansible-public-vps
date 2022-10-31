@@ -27,35 +27,35 @@
       - "{{ authelia_log_location }}"
 
 - name: "Ensure service directories exists"
-
   ansible.builtin.file:
       path: "{{ item }}"
       mode: 0755
       state: directory
   with_items:
-      - "{{ docker_dir }}/traefik/rules"
-      - "{{ docker_dir }}/authelia"
+      - "{{ docker_dir }}/proxy/traefik/rules"
+      - "{{ docker_dir }}/proxy/authelia"
 
 - name: "Copy templates to server"
   become: true
   ansible.builtin.template:
       src: "{{ item.src }}"
-      dest: "{{ docker_dir }}/{{ item.dest }}"
+      dest: "{{ docker_dir }}/proxy/{{ item.dest }}"
       owner: "root"
       group: "root"
       mode: 0600
   notify: restart_proxy
   with_items:
-      - { src: "reverse-proxy-docker-compose.yml.j2", dest: "reverse_proxy.yml" }
+      - { src: "reverse-proxy-docker-compose.yml.j2", dest: "docker-compose.yml" }
       - { src: "traefik-config-middlewares.yml.j2", dest: "traefik/rules/middlewares.yml" }
       - { src: "../files/httpauth.txt", dest: "traefik/.httpauth.txt" }
       - { src: "authelia-users.yml.j2", dest: "authelia/users.yml" }
       - { src: "authelia-config.yml.j2", dest: "authelia/config.yml" }
+      - { src: "docker.env.j2", dest: ".env" }
 
 - name: "Install logrotation"
   become: true
   ansible.builtin.template:
-      src: "traefik.logrotate.j2"
+      src: "traefik.logrotate.conf.j2"
       dest: "/etc/logrotate.d/traefik"
       owner: "root"
       group: "root"
@@ -64,7 +64,7 @@
 - name: "Write Secrets"
   become: true
   ansible.builtin.copy:
-      dest: "{{ secrets_dir }}/{{ item.dest }}"
+      dest: "{{ docker_dir }}/proxy/secrets/{{ item.dest }}"
       content: "{{ item.content }}"
       mode: 0600
       owner: root

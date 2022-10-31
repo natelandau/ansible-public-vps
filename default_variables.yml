@@ -1,6 +1,5 @@
 ---
 docker_dir: "{{ ansible_user_dir }}/services"
-secrets_dir: "{{ docker_dir }}/secrets"
 timezone: "America/New_York"
 
 authelia_version: 4.37.0
@@ -9,6 +8,8 @@ authelia_log_location: /var/log/authelia
 traefik_version: 2.9
 traefik_log_location: /var/log/traefik
 
+nginx_log_location: /var/log/nginx
+
 # subdomains_without_cloudflare_proxy:
 #     -
 
@@ -16,6 +17,7 @@ crowdsec_collections:
     - crowdsecurity/whitelist-good-actors
     - crowdsecurity/traefik
     - LePresidente/authelia
+    - crowdsecurity/nginx
 
 crowdsec_bouncers:
     - crowdsec-firewall-bouncer-iptables

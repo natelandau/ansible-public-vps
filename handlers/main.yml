@@ -1,4 +1,5 @@
 ---
+##################################### Reload Crowdsec
 - name: Restart Crowdsec
   become: true
   ansible.builtin.service:
@@ -7,6 +8,7 @@
       enabled: true
   listen: restart_crowdsec
 
+##################################### Reload reverse proxy
 - name: "Is reverse proxy running running"
   become: true
   ansible.builtin.shell:
@@ -22,7 +24,7 @@
 - name: "stop reverse proxy"
   become: true
   ansible.builtin.command:
-      cmd: "docker compose -f {{ docker_dir }}/reverse_proxy.yml down --remove-orphans"
+      cmd: "docker compose -f {{ docker_dir }}/proxy/docker-compose.yml down --remove-orphans"
   when: docker_running.rc == 0
   changed_when: false
   listen: restart_proxy
@@ -31,10 +33,11 @@
 - name: "Start reverse proxy"
   become: true
   ansible.builtin.command:
-      cmd: "docker compose -f {{ docker_dir }}/reverse_proxy.yml up -d"
+      cmd: "docker compose -f {{ docker_dir }}/proxy/docker-compose.yml up -d"
   changed_when: false
   listen: restart_proxy
 
+##################################### Reload Plausible Container
 - name: "Is plausible running"
   become: true
   ansible.builtin.shell:
@@ -62,3 +65,77 @@
       cmd: "docker compose -f {{ docker_dir }}/plausible/docker-compose.yml up -d"
   changed_when: false
   listen: restart_plausible
+
+##################################### Restart nginx container
+- name: "Is nginx running?"
+  become: true
+  ansible.builtin.shell:
+      cmd: |
+          set -o pipefail
+          docker ps --format '{{ '{{' }}.Names{{ '}}' }}' | grep -w nginx
+      executable: /bin/bash
+  register: docker_running
+  ignore_errors: true
+  changed_when: false
+  listen: restart_nginx
+
+- name: "Confirm nginx configs work"
+  become: true
+  ansible.builtin.command:
+      cmd: "docker exec -it nginx nginx -t"
+  register: nginx_config_works
+  when: docker_running.rc == 0
+  changed_when: false
+  listen: restart_nginx
+
+- name: "stop nginx container"
+  become: true
+  ansible.builtin.command:
+      cmd: "docker compose -f {{ docker_dir }}/web/docker-compose.yml down"
+  when:
+      - docker_running.rc == 0
+      - nginx_config_works.rc == 0
+  changed_when: false
+  listen: restart_nginx
+  ignore_errors: true
+
+- name: "Start nginx container"
+  become: true
+  ansible.builtin.command:
+      cmd: "docker compose -f {{ docker_dir }}/web/docker-compose.yml up -d"
+  changed_when: false
+  when:
+      - docker_running.rc != 1 or nginx_config_works.rc == 0
+  listen: restart_nginx
+
+##################################### Reload nginx configs
+- name: "Is nginx running?"
+  become: true
+  ansible.builtin.shell:
+      cmd: |
+          set -o pipefail
+          docker ps --format '{{ '{{' }}.Names{{ '}}' }}' | grep -w nginx
+      executable: /bin/bash
+  register: docker_running
+  ignore_errors: true
+  changed_when: false
+  listen: reload_nginx_config
+
+- name: "Confirm nginx configs work"
+  become: true
+  ansible.builtin.command:
+      cmd: "docker exec -it nginx nginx -t"
+  register: nginx_config_works
+  when: docker_running.rc == 0
+  changed_when: false
+  listen: reload_nginx_config
+
+- name: "Reload nginx config"
+  become: true
+  ansible.builtin.command:
+      cmd: "docker exec -it nginx nginx -s reload"
+  when:
+      - docker_running.rc == 0
+      - nginx_config_works.rc == 0
+  changed_when: false
+  listen: reload_nginx_config

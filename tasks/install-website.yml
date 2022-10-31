@@ -1,0 +1,56 @@
+---
+- name: "Ensure log locations exists"
+  become: true
+  ansible.builtin.file:
+      path: "{{ nginx_log_location }}"
+      mode: 0755
+      owner: root
+      group: root
+      state: directory
+
+- name: "Ensure service directories exists"
+  ansible.builtin.file:
+      path: "{{ item }}"
+      mode: 0755
+      state: directory
+  with_items:
+      - "{{ docker_dir }}/web/nginx"
+      - "{{ docker_dir }}/web/nginx/nginx"
+      - "{{ docker_dir }}/web/nginx/nginx/site-confs"
+      - "{{ docker_dir }}/web/nginx/www"
+      - "{{ docker_dir }}/web/nginx/www/production"
+      - "{{ docker_dir }}/web/nginx/www/staging"
+
+- name: "Copy templates - user"
+  ansible.builtin.template:
+      src: "{{ item.src }}"
+      dest: "{{ docker_dir }}/web/nginx/{{ item.dest }}"
+      owner: "{{ ansible_user_uid }}"
+      group: "{{ ansible_user_gid }}"
+      mode: 0664
+  with_items:
+      - { src: "nginx.conf.j2", dest: "nginx/nginx.conf" }
+      - { src: "nginx-servers.conf.j2", dest: "nginx/site-confs/default.conf" }
+  notify: reload_nginx_config
+
+- name: "Copy templates- root"
+  become: true
+  ansible.builtin.template:
+      src: "{{ item.src }}"
+      dest: "{{ docker_dir }}/web/{{ item.dest }}"
+      owner: "root"
+      group: "root"
+      mode: 0600
+  with_items:
+      - { src: "nginx-docker-compose.yml.j2", dest: "docker-compose.yml" }
+      - { src: "docker.env.j2", dest: ".env" }
+  notify: restart_nginx
+
+- name: "Install logrotation"
+  become: true
+  ansible.builtin.template:
+      src: "nginx.logrotate.conf.j2"
+      dest: "/etc/logrotate.d/nginx"
+      owner: "root"
+      group: "root"
+      mode: "0644"
