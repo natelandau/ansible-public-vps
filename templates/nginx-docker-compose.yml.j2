@@ -11,7 +11,7 @@ services:
             - "PGID=${PGID:?err}"
         volumes:
             - {{ docker_dir }}/web/nginx:/config
-            - {{ nginx_log_location }}:/var/log/nginx/
+            - {{ nginx_log_location }}:/config/log/nginx/
         ports:
             - 8880:80
         restart: unless-stopped

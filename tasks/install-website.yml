@@ -45,12 +45,3 @@
       - { src: "nginx-docker-compose.yml.j2", dest: "docker-compose.yml" }
       - { src: "docker.env.j2", dest: ".env" }
   notify: restart_nginx
-
-- name: "Install logrotation"
-  become: true
-  ansible.builtin.template:
-      src: "nginx.logrotate.conf.j2"
-      dest: "/etc/logrotate.d/nginx"
-      owner: "root"
-      group: "root"
-      mode: "0644"

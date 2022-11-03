@@ -44,7 +44,7 @@ server {
     # Server specific
     server_name staging.natenate.org;
     root /config/www/staging;
-    access_log  /var/log/nginx/staging-access.log;
+    access_log  /config/log/nginx/staging-access.log;
 
     # Shared configs
     error_page 403 404 /404.html;
@@ -75,7 +75,7 @@ server {
     # Server specific
     server_name production.natenate.org;
     root /config/www/production;
-    access_log  /var/log/nginx/production-access.log;
+    access_log  /config/log/nginx/production-access.log;
 
     # Shared configs
     error_page 403 404 /404.html;
