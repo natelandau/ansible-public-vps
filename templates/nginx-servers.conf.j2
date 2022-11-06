@@ -47,7 +47,7 @@ server {
     access_log  /config/log/nginx/staging-access.log;
 
     # Shared configs
-    error_page 403 404 /404.html;
+    error_page 403 404 /404/;
     client_max_body_size 0;
     #add_header Content-Encoding gzip;
 
@@ -78,7 +78,7 @@ server {
     access_log  /config/log/nginx/production-access.log;
 
     # Shared configs
-    error_page 403 404 /404.html;
+    error_page 403 404 /404/;
     client_max_body_size 0;
     #add_header Content-Encoding gzip;
 
